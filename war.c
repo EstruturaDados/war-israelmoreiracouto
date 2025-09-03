@@ -13,9 +13,21 @@ typedef struct {
     int tropas;
 } Territorio;
 
-void exibirMapa(Territorio *t, int n) {
+void inicializarMapa(Territorio *t) {
+    char *nomes[MAX] = {"Brasil", "Argentina", "Chile", "Peru", "México"};
+    char *cores[MAX] = {"Azul", "Verde", "Vermelho", "Amarelo", "Preto"};
+    int tropasIniciais[MAX] = {5, 4, 6, 3, 5};
+
+    for (int i = 0; i < MAX; i++) {
+        strcpy(t[i].nome, nomes[i]);
+        strcpy(t[i].corExercito, cores[i]);
+        t[i].tropas = tropasIniciais[i];
+    }
+}
+
+void exibirMapa(const Territorio *t) {
     printf("\n=== Estado Atual do Mapa ===\n");
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < MAX; i++) {
         printf("(%d) %s | Exército: %s | Tropas: %d\n",
                i + 1, t[i].nome, t[i].corExercito, t[i].tropas);
     }
@@ -23,7 +35,7 @@ void exibirMapa(Territorio *t, int n) {
 
 void simularAtaque(Territorio *atacante, Territorio *defensor) {
     if (atacante->tropas <= 1) {
-        printf("\nO território atacante precisa de pelo menos 2 tropas para atacar!\n");
+        printf("\nO território atacante precisa de pelo menos 2 tropas!\n");
         return;
     }
 
@@ -49,49 +61,77 @@ void simularAtaque(Territorio *atacante, Territorio *defensor) {
     }
 }
 
-int main() {
-    srand(time(NULL));
+int missaoCumprida(const Territorio *t) {
+    int conquistados = 0;
+    int verdeDestruido = 1; 
 
-    Territorio *territorios = (Territorio *) calloc(MAX, sizeof(Territorio));
-
-    printf("=== Cadastro dos Territórios ===\n");
     for (int i = 0; i < MAX; i++) {
-        printf("\nTerritório %d:\n", i + 1);
-
-        printf("Nome: ");
-        fgets(territorios[i].nome, TAM_NOME, stdin);
-        territorios[i].nome[strcspn(territorios[i].nome, "\n")] = '\0';
-
-        printf("Cor do Exército: ");
-        fgets(territorios[i].corExercito, TAM_COR, stdin);
-        territorios[i].corExercito[strcspn(territorios[i].corExercito, "\n")] = '\0';
-
-        printf("Número de Tropas: ");
-        scanf("%d", &territorios[i].tropas);
-        getchar();
-    }
-
-    int atacante, defensor;
-    while (1) {
-        exibirMapa(territorios, MAX);
-
-        printf("\nEscolha o território ATACANTE (1-5, 0 para sair): ");
-        scanf("%d", &atacante);
-        if (atacante == 0) break;
-
-        printf("Escolha o território DEFENSOR (1-5): ");
-        scanf("%d", &defensor);
-
-        if (atacante < 1 || atacante > MAX || defensor < 1 || defensor > MAX || atacante == defensor) {
-            printf("Jogada inválida!\n");
-            continue;
+        if (strcmp(t[i].corExercito, "Verde") == 0) {
+            verdeDestruido = 0;
         }
-
-        simularAtaque(&territorios[atacante - 1], &territorios[defensor - 1]);
+        if (strcmp(t[i].corExercito, "Azul") == 0) { // jogador = Azul
+            conquistados++;
+        }
     }
 
-    free(territorios);
+    if (verdeDestruido) {
+        printf("\n🎉 Missão concluída: Destruir o exército verde!\n");
+        return 1;
+    }
+    if (conquistados >= 3) {
+        printf("\n🎉 Missão concluída: Conquistar 3 territórios!\n");
+        return 1;
+    }
     return 0;
 }
 
-printf("Novo commit\n");
+int main() {
+    srand(time(NULL));
+    Territorio territorios[MAX];
+    inicializarMapa(territorios);
+
+    int opcao, atacante, defensor;
+
+    do {
+        printf("\n=== MENU PRINCIPAL ===\n");
+        printf("1 - Atacar\n");
+        printf("2 - Verificar Missão\n");
+        printf("0 - Sair\n");
+        printf("Escolha: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                exibirMapa(territorios);
+                printf("\nEscolha o território ATACANTE (1-5): ");
+                scanf("%d", &atacante);
+                printf("Escolha o território DEFENSOR (1-5): ");
+                scanf("%d", &defensor);
+                if (atacante < 1 || atacante > MAX || defensor < 1 || defensor > MAX || atacante == defensor) {
+                    printf("Jogada inválida!\n");
+                } else {
+                    simularAtaque(&territorios[atacante - 1], &territorios[defensor - 1]);
+                }
+                break;
+
+            case 2:
+                if (missaoCumprida(territorios)) {
+                    printf("🏆 Você venceu o jogo!\n");
+                    opcao = 0;
+                } else {
+                    printf("\nMissão ainda não concluída.\n");
+                }
+                break;
+
+            case 0:
+                printf("\nSaindo do jogo...\n");
+                break;
+
+            default:
+                printf("Opção inválida!\n");
+        }
+
+    } while (opcao != 0);
+
+    return 0;
+}
